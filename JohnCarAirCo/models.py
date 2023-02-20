@@ -54,7 +54,7 @@ class ServiceType(models.Model):
     serviceChoice = models.CharField(max_length=50, null=True, choices=servicesOffered)
     estimatedCost = models.DecimalField(max_digits=12, decimal_places=2)
 
-class salesOrder(models.Model):
+class SalesOrder(models.Model):
     customer = models.ForeignKey(CustomerDetails, on_delete=models.CASCADE)
     dateOrdered = models.DateField(auto_now_add=True)
     totalPrice = models.DecimalField(max_digits=12, decimal_places=2)
@@ -65,13 +65,13 @@ class salesOrder(models.Model):
 
 class OrderItem(models.Model):
     product = models.ForeignKey(ProductUnit, on_delete=models.CASCADE)
-    order = models.ForeignKey(salesOrder, on_delete=models.CASCADE)
+    order = models.ForeignKey(SalesOrder, on_delete=models.CASCADE)
     quantity = models.PositiveIntegerField()
 
     def __str__(self):
         return f'{self.quantity} x {self.product.unitName} in Order {self.order.id}'
 
-class serviceOrder(models.Model):
+class ServiceOrder(models.Model):
     customer = models.ForeignKey(CustomerDetails, on_delete=models.CASCADE)
     dateOrdered = models.DateField(auto_now_add=True)
     service = models.ForeignKey(ServiceType,on_delete=models.CASCADE)
@@ -79,7 +79,7 @@ class serviceOrder(models.Model):
     def __str__(self):
         return f"Order #{self.id} - {self.customer}"
 
-class purchaseOrder(models.Model):
+class PurchaseOrder(models.Model):
     orderDate = models.DateField(auto_now_add=True)
     supplierName = models.ForeignKey(SupplierDetails, on_delete=models.CASCADE)
     customerName = models.ForeignKey(CustomerDetails, on_delete=models.CASCADE)
