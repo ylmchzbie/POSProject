@@ -51,7 +51,7 @@ class ServiceType(models.Model):
         ('Office', 'Office'),
         ('N/A', 'N/A'),
     ]
-    serviceChoice = models.CharField(max_length=50, null=True, choices=servicesOffered)
+    serviceChoice = models.CharField(max_length=50, null=False, primary_key=True, choices=servicesOffered, default='N/A')
     estimatedCost = models.DecimalField(max_digits=12, decimal_places=2)
 
 class SalesOrder(models.Model):

@@ -62,10 +62,10 @@ class ProductUnitSerializer(serializers.HyperlinkedModelSerializer):
   class Meta:
     model = ProductUnit
     fields = [
+      'id',
       'unitName',
       'unitPrice',
       'unitQuantity',
-      'airconType',
       'unitType'
     ]
 
@@ -73,6 +73,7 @@ class CustomerDetailsSerializer(serializers.HyperlinkedModelSerializer):
   class Meta:
     model = CustomerDetails
     fields = [
+      'id',
       'customerName',
       'customerContact',
       'customerEmail',
@@ -83,6 +84,7 @@ class TechnicianDetailsSerializer(serializers.HyperlinkedModelSerializer):
   class Meta:
     model = TechnicianDetails
     fields = [
+      'id',
       'techName',
       'techPhone',
       'techEmail',
@@ -93,6 +95,7 @@ class SupplierDetailsSerializer(serializers.HyperlinkedModelSerializer):
   class Meta:
     model = SupplierDetails
     fields = [
+      'id',
       'suppName',
       'suppPhone',
       'suppEmail',
@@ -103,16 +106,23 @@ class ServiceTypeSerializer(serializers.HyperlinkedModelSerializer):
   class Meta:
     model = ServiceType
     fields = [
-      'servicesOffered',
       'serviceChoice',
       'estimatedCost'
     ]
 
 class SalesOrderSerializer(serializers.HyperlinkedModelSerializer):
+  customer = serializers.StringRelatedField(many=False)
+  customer_id = serializers.PrimaryKeyRelatedField(
+    queryset=CustomerDetails.objects.all(),
+    source='customer',
+  )
+
   class Meta:
     model = SalesOrder
     fields = [
+      'id',
       'customer',
+      'customer_id',
       'dateOrdered',
       'totalPrice',
       'products'
@@ -122,6 +132,7 @@ class OrderItemSerializer(serializers.HyperlinkedModelSerializer):
   class Meta:
     model = OrderItem
     fields = [
+      'id',
       'product',
       'order',
       'quantity'
@@ -131,6 +142,7 @@ class ServiceOrderSerializer(serializers.HyperlinkedModelSerializer):
   class Meta:
     model = ServiceOrder
     fields = [
+      'id',
       'customer',
       'dateOrdered',
       'service'
@@ -140,6 +152,7 @@ class PurchaseOrderSerializer(serializers.HyperlinkedModelSerializer):
   class Meta:
     model = PurchaseOrder
     fields = [
+      'id',
       'orderDate',
       'supplierName',
       'customerName',
