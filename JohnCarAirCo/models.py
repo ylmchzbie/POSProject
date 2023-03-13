@@ -3,16 +3,15 @@ from django.db import models
 # Create your models here.
 
 class ProductUnit(models.Model):
-    unitName = models.CharField(max_length=255, default='aircon')
-    unitPrice = models.DecimalField(max_digits=12, decimal_places=2)
-    #unitQuantity is stock
-    unitQuantity = models.IntegerField()
     airconType = [
         ('Split Type', 'Split Type'),
         ('Window Air Conditioner', 'Window Air Conditioner'),
         ('N/A', 'N/A'),
     ]
-    unitType = models.CharField(max_length=50, null=True, choices=airconType)
+    unitName = models.CharField(max_length=255, null=False, primary_key=True, choices=airconType, default='N/A')
+    unitPrice = models.DecimalField(max_digits=12, decimal_places=2)
+    #unitQuantity is stock
+    unitQuantity = models.IntegerField()
 
     def __str__(self):
         return self.unitName
@@ -54,27 +53,39 @@ class ServiceType(models.Model):
     serviceChoice = models.CharField(max_length=50, null=False, primary_key=True, choices=servicesOffered, default='N/A')
     estimatedCost = models.DecimalField(max_digits=12, decimal_places=2)
 
+    def __str__(self):
+        return f"{self.serviceChoice} Service"
+
 class SalesOrder(models.Model):
+    statusChoices = [
+        ('Active', 'Active'),
+        ('Finished', 'Finished'),
+        ('Cancelled', 'Cancelled')
+    ]
     customer = models.ForeignKey(CustomerDetails, on_delete=models.CASCADE)
     dateOrdered = models.DateField(auto_now_add=True)
-    totalPrice = models.DecimalField(max_digits=12, decimal_places=2)
-    products = models.ManyToManyField(ProductUnit, through='OrderItem')
+    product = models.ForeignKey(ProductUnit, on_delete=models.CASCADE)
+    quantity = models.PositiveIntegerField()
+    @property
+    def totalPrice(self):
+        return sum([item.product.unitPrice * item.quantity for item in self.products.all()])
+    status = models.CharField(max_length=255, choices=statusChoices, default='Active')
 
     def __str__(self):
         return f"Order #{self.id} - {self.customer}"
 
-class OrderItem(models.Model):
-    product = models.ForeignKey(ProductUnit, on_delete=models.CASCADE)
-    order = models.ForeignKey(SalesOrder, on_delete=models.CASCADE)
-    quantity = models.PositiveIntegerField()
-
-    def __str__(self):
-        return f'{self.quantity} x {self.product.unitName} in Order {self.order.id}'
-
 class ServiceOrder(models.Model):
+    statusChoices = [
+        ('Active', 'Active'),
+        ('Finished', 'Finished'),
+        ('Cancelled', 'Cancelled')
+    ]
     customer = models.ForeignKey(CustomerDetails, on_delete=models.CASCADE)
+    technician = models.ForeignKey(TechnicianDetails, on_delete=models.CASCADE)
     dateOrdered = models.DateField(auto_now_add=True)
     service = models.ForeignKey(ServiceType,on_delete=models.CASCADE)
+    serviceDate = models.DateField()
+    status = models.CharField(max_length=255, choices=statusChoices, default='Active')
 
     def __str__(self):
         return f"Order #{self.id} - {self.customer}"

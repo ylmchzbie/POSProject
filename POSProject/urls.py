@@ -29,7 +29,6 @@ router.register(r'technician_details', views.TechnicianDetailsViewSet)
 router.register(r'supplier_details', views.SupplierDetailsViewSet)
 router.register(r'services', views.ServiceTypeViewSet)
 router.register(r'sales_orders', views.SalesOrderViewSet)
-router.register(r'orders', views.OrderItemViewSet)
 router.register(r'service_orders', views.ServiceOrderViewSet)
 router.register(r'purchase_orders', views.PurchaseOrderViewSet)
 
