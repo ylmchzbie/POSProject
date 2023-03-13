@@ -6,7 +6,6 @@ from JohnCarAirCo.models import (
   SupplierDetails,
   ServiceType,
   SalesOrder,
-  OrderItem,
   ServiceOrder,
   PurchaseOrder
 )
@@ -62,11 +61,9 @@ class ProductUnitSerializer(serializers.HyperlinkedModelSerializer):
   class Meta:
     model = ProductUnit
     fields = [
-      'id',
       'unitName',
       'unitPrice',
-      'unitQuantity',
-      'unitType'
+      'unitQuantity'
     ]
 
 class CustomerDetailsSerializer(serializers.HyperlinkedModelSerializer):
@@ -117,6 +114,12 @@ class SalesOrderSerializer(serializers.HyperlinkedModelSerializer):
     source='customer',
   )
 
+  product = serializers.StringRelatedField(many=False)
+  product_id = serializers.PrimaryKeyRelatedField(
+    queryset=ProductUnit.objects.all(),
+    source='product',
+  )
+
   class Meta:
     model = SalesOrder
     fields = [
@@ -125,27 +128,46 @@ class SalesOrderSerializer(serializers.HyperlinkedModelSerializer):
       'customer_id',
       'dateOrdered',
       'totalPrice',
-      'products'
-    ]
-
-class OrderItemSerializer(serializers.HyperlinkedModelSerializer):
-  class Meta:
-    model = OrderItem
-    fields = [
-      'id',
       'product',
-      'order',
-      'quantity'
+      'product_id',
+      'quantity',
+      'status',
     ]
 
 class ServiceOrderSerializer(serializers.HyperlinkedModelSerializer):
+  customer = serializers.StringRelatedField(many=False)
+  customer_id = serializers.PrimaryKeyRelatedField(
+    queryset=CustomerDetails.objects.all(),
+    source='customer',
+  )
+
+  service = serializers.StringRelatedField(many=False)
+  service_id = serializers.PrimaryKeyRelatedField(
+    queryset=ServiceType.objects.all(),
+    source='service',
+  )
+
+  technician = serializers.StringRelatedField(many=False)
+  technician_id = serializers.PrimaryKeyRelatedField(
+    queryset=TechnicianDetails.objects.all(),
+    source='technician',
+  )
+
+  serviceDate = serializers.DateField(format="%Y-%m-%d")
+
   class Meta:
     model = ServiceOrder
     fields = [
       'id',
       'customer',
+      'customer_id',
       'dateOrdered',
-      'service'
+      'service',
+      'service_id',
+      'status',
+      'technician',
+      'technician_id',
+      'serviceDate',
     ]
 
 class PurchaseOrderSerializer(serializers.HyperlinkedModelSerializer):
