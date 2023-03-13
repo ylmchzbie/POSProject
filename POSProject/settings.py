@@ -29,6 +29,7 @@ SECRET_KEY = 'django-insecure-^k@m63$2qowri6)hm=x+r$jy!u(&#9up4xjvq*(&$m40*d!_k7
 DEBUG = True
 
 ALLOWED_HOSTS = ['pos.snry.xyz']
+CSRF_TRUSTED_ORIGINS = ['https://pos.snry.xyz']
 
 
 # Application definition
