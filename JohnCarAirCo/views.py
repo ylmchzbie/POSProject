@@ -2,27 +2,33 @@ from django.contrib.auth.models import User, Group
 from rest_framework import viewsets
 from rest_framework import permissions
 from JohnCarAirCo.models import (
-  ProductUnit,
-  CustomerDetails,
-  TechnicianDetails,
-  SupplierDetails,
-  ServiceType,
-  SalesOrder,
-  ServiceOrder,
-  PurchaseOrder
+    AirconType,
+    ProductUnit,
+    CustomerDetails,
+    TechnicianDetails,
+    ServiceType,
+    SalesOrder,
+    SalesOrderEntry,
+    ServiceOrder,
+    ServiceOrderEntry,
+    SalesOrderPayment,
+    ServiceOrderPayment,
 )
 from JohnCarAirCo.serializers import (
+    AirconTypeSerializer,
     UserSerializer,
     RegisterSerializer,
     GroupSerializer,
     ProductUnitSerializer,
     CustomerDetailsSerializer,
     TechnicianDetailsSerializer,
-    SupplierDetailsSerializer,
     ServiceTypeSerializer,
     SalesOrderSerializer,
+    SalesOrderEntrySerializer,
     ServiceOrderSerializer,
-    PurchaseOrderSerializer
+    ServiceOrderEntrySerializer,
+    SalesOrderPaymentSerializer,
+    ServiceOrderPaymentSerializer,
 )
 from rest_framework import mixins
 from rest_framework.views import APIView
@@ -100,20 +106,6 @@ class TechnicianDetailsViewSet(viewsets.ModelViewSet):
     def delete(self, request, *args, **kwargs):
         return self.destroy(request, *args, **kwargs)
 
-class SupplierDetailsViewSet(viewsets.ModelViewSet):
-    """
-    API endpoint that allows groups to be viewed or edited.
-    """
-    queryset = SupplierDetails.objects.all()
-    serializer_class = SupplierDetailsSerializer
-    permission_classes = [permissions.IsAuthenticated]
-
-    def put(self, request, *args, **kwargs):
-        return self.update(request, *args, **kwargs)
-
-    def delete(self, request, *args, **kwargs):
-        return self.destroy(request, *args, **kwargs)
-
 class ServiceTypeViewSet(viewsets.ModelViewSet):
     """
     API endpoint that allows groups to be viewed or edited.
@@ -127,6 +119,43 @@ class ServiceTypeViewSet(viewsets.ModelViewSet):
 
     def delete(self, request, *args, **kwargs):
         return self.destroy(request, *args, **kwargs)
+
+class AirconTypeViewSet(viewsets.ModelViewSet):
+    """
+    API endpoint that allows groups to be viewed or edited.
+    """
+    queryset = AirconType.objects.all()
+    serializer_class = AirconTypeSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def put(self, request, *args, **kwargs):
+        return self.update(request, *args, **kwargs)
+
+    def delete(self, request, *args, **kwargs):
+        return self.destroy(request, *args, **kwargs)
+
+class SalesOrderEntryViewSet(viewsets.ModelViewSet):
+    """
+    API endpoint that allows groups to be viewed or edited.
+    """
+    queryset = SalesOrderEntry.objects.all()
+    serializer_class = SalesOrderEntrySerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def put(self, request, *args, **kwargs):
+        return self.update(request, *args, **kwargs)
+
+    def destroy(self, request, *args, **kwargs):
+        # subtract price to sales order total
+        sales_order_entry = self.get_object()
+        sales_order = SalesOrder.objects.get(id=sales_order_entry.order.id)
+
+        sales_order.total_price -= sales_order_entry.quantity * sales_order_entry.product.unit_price
+        sales_order.save()
+
+        sales_order_entry.delete()
+
+        return Response(request.data, status=200)
 
 class SalesOrderViewSet(viewsets.ModelViewSet):
     """
@@ -142,6 +171,29 @@ class SalesOrderViewSet(viewsets.ModelViewSet):
     def delete(self, request, *args, **kwargs):
         return self.destroy(request, *args, **kwargs)
 
+class ServiceOrderEntryViewSet(viewsets.ModelViewSet):
+    """
+    API endpoint that allows groups to be viewed or edited.
+    """
+    queryset = ServiceOrderEntry.objects.all()
+    serializer_class = ServiceOrderEntrySerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def put(self, request, *args, **kwargs):
+        return self.update(request, *args, **kwargs)
+
+    def destroy(self, request, *args, **kwargs):
+        # subtract price to sales order total
+        service_order_entry = self.get_object()
+        service_order = ServiceOrder.objects.get(id=service_order_entry.order.id)
+        
+        service_order.total_price -= service_order_entry.quantity * service_order_entry.service.service_cost
+        service_order.save()
+
+        service_order_entry.delete()
+
+        return Response(request.data, status=200)
+
 class ServiceOrderViewSet(viewsets.ModelViewSet):
     """
     API endpoint that allows groups to be viewed or edited.
@@ -155,13 +207,27 @@ class ServiceOrderViewSet(viewsets.ModelViewSet):
 
     def delete(self, request, *args, **kwargs):
         return self.destroy(request, *args, **kwargs)
-
-class PurchaseOrderViewSet(viewsets.ModelViewSet):
+    
+class SalesOrderPaymentViewSet(viewsets.ModelViewSet):
     """
     API endpoint that allows groups to be viewed or edited.
     """
-    queryset = PurchaseOrder.objects.all()
-    serializer_class = PurchaseOrderSerializer
+    queryset = SalesOrderPayment.objects.all()
+    serializer_class = SalesOrderPaymentSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def put(self, request, *args, **kwargs):
+        return self.update(request, *args, **kwargs)
+
+    def delete(self, request, *args, **kwargs):
+        return self.destroy(request, *args, **kwargs)
+
+class ServiceOrderPaymentViewSet(viewsets.ModelViewSet):
+    """
+    API endpoint that allows groups to be viewed or edited.
+    """
+    queryset = ServiceOrderPayment.objects.all()
+    serializer_class = ServiceOrderPaymentSerializer
     permission_classes = [permissions.IsAuthenticated]
 
     def put(self, request, *args, **kwargs):
