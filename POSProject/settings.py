@@ -29,6 +29,7 @@ SECRET_KEY = 'django-insecure-^k@m63$2qowri6)hm=x+r$jy!u(&#9up4xjvq*(&$m40*d!_k7
 DEBUG = True
 
 ALLOWED_HOSTS = ['pos.snry.xyz']
+CSRF_TRUSTED_ORIGINS = ['https://pos.snry.xyz']
 
 
 # Application definition
@@ -104,7 +105,7 @@ WSGI_APPLICATION = 'POSProject.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'sqlite3.db',
+        'NAME': BASE_DIR / 'sql.db',
     }
 }
 

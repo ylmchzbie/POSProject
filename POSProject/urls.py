@@ -26,11 +26,14 @@ router = routers.DefaultRouter()
 router.register(r'product_units', views.ProductUnitViewSet)
 router.register(r'customer_details', views.CustomerDetailsViewSet)
 router.register(r'technician_details', views.TechnicianDetailsViewSet)
-router.register(r'supplier_details', views.SupplierDetailsViewSet)
 router.register(r'services', views.ServiceTypeViewSet)
 router.register(r'sales_orders', views.SalesOrderViewSet)
+router.register(r'sales_order_entries', views.SalesOrderEntryViewSet)
 router.register(r'service_orders', views.ServiceOrderViewSet)
-router.register(r'purchase_orders', views.PurchaseOrderViewSet)
+router.register(r'service_order_entries', views.ServiceOrderEntryViewSet)
+router.register(r'aircon_types', views.AirconTypeViewSet)
+router.register(r'service_order_payments', views.ServiceOrderPaymentViewSet)
+router.register(r'sales_order_payments', views.SalesOrderPaymentViewSet)
 
 # Wire up our API using automatic URL routing.
 # Additionally, we include login URLs for the browsable API.
