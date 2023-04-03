@@ -2,88 +2,122 @@ from django.db import models
 
 # Create your models here.
 
-class ProductUnit(models.Model):
-    unitName = models.CharField(max_length=255, default='aircon')
-    unitPrice = models.DecimalField(max_digits=12, decimal_places=2)
-    #unitQuantity is stock
-    unitQuantity = models.IntegerField()
-    airconType = [
-        ('Split Type', 'Split Type'),
-        ('Window Air Conditioner', 'Window Air Conditioner'),
-        ('N/A', 'N/A'),
-    ]
-    unitType = models.CharField(max_length=50, null=True, choices=airconType)
+class AirconType(models.Model):
+    type_name = models.CharField(max_length=255, null=False, primary_key=True)
 
     def __str__(self):
-        return self.unitName
+        return self.type_name
+
+class ProductUnit(models.Model):
+    unit_name = models.CharField(max_length=255, null=False)
+    unit_price = models.DecimalField(max_digits=12, decimal_places=2)
+    unit_type = models.ForeignKey(AirconType, on_delete=models.SET_NULL, null=True)
+    unit_stock = models.IntegerField()
+
+    def __str__(self):
+        return self.unit_name
 
 class CustomerDetails(models.Model):
-    customerName = models.CharField(max_length=255)
-    customerContact = models.CharField(max_length=12)
-    customerEmail = models.CharField(max_length=255)
-    customerAddress = models.CharField(max_length=255)
+    customer_name = models.CharField(max_length=255)
+    customer_contact = models.CharField(max_length=12)
+    customer_email = models.CharField(max_length=255)
+    customer_address = models.CharField(max_length=255)
 
     def __str__(self):
-        return self.customerName
+        return self.customer_name
 
 class TechnicianDetails(models.Model):
-    techName = models.CharField(max_length=255)
-    techPhone = models.CharField(max_length=12)
-    techEmail = models.CharField(max_length=255)
-    techSched = models.CharField(max_length=255)
+    tech_name = models.CharField(max_length=255)
+    tech_phone = models.CharField(max_length=12)
+    tech_email = models.CharField(max_length=255)
+    tech_sched = models.CharField(max_length=255)
 
     def __str__(self):
-        return self.techName
-
-class SupplierDetails(models.Model):
-    suppName = models.CharField(max_length=255)
-    suppPhone = models.CharField(max_length=12)
-    suppEmail = models.CharField(max_length=255)
-    suppAddress = models.CharField(max_length=255)
-
-    def __str__(self):
-        return self.suppName
+        return self.tech_name
 
 class ServiceType(models.Model):
-    servicesOffered = [
-        ('Cars', 'Cars'),
-        ('House', 'House'),
-        ('Office', 'Office'),
-        ('N/A', 'N/A'),
-    ]
-    serviceChoice = models.CharField(max_length=50, null=True, choices=servicesOffered)
-    estimatedCost = models.DecimalField(max_digits=12, decimal_places=2)
+    service_name = models.CharField(max_length=50, null=False)
+    service_cost = models.DecimalField(max_digits=12, decimal_places=2)
+
+    def __str__(self):
+        return f"{self.service_name}"
+
+class SalesOrderEntry(models.Model):
+    order = models.ForeignKey('SalesOrder', on_delete=models.CASCADE, related_name='entries')
+    product = models.ForeignKey(ProductUnit, on_delete=models.CASCADE)
+    quantity = models.PositiveIntegerField()
+    entry_price = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+
+    def __str__(self):
+        return f"{self.product} x{self.quantity}"
 
 class SalesOrder(models.Model):
+    status_choices = [
+        ('Active', 'Active'),
+        ('Finished', 'Finished'),
+        ('Cancelled', 'Cancelled')
+    ]
     customer = models.ForeignKey(CustomerDetails, on_delete=models.CASCADE)
-    dateOrdered = models.DateField(auto_now_add=True)
-    totalPrice = models.DecimalField(max_digits=12, decimal_places=2)
-    products = models.ManyToManyField(ProductUnit, through='OrderItem')
+    date_ordered = models.DateField(auto_now_add=True)
+    total_price = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+
+    status = models.CharField(max_length=255, choices=status_choices, default='Active')
 
     def __str__(self):
         return f"Order #{self.id} - {self.customer}"
 
-class OrderItem(models.Model):
-    product = models.ForeignKey(ProductUnit, on_delete=models.CASCADE)
-    order = models.ForeignKey(SalesOrder, on_delete=models.CASCADE)
+class ServiceOrderEntry(models.Model):
+    order = models.ForeignKey('ServiceOrder', on_delete=models.CASCADE, related_name='entries')
+    service = models.ForeignKey(ServiceType, on_delete=models.CASCADE)
     quantity = models.PositiveIntegerField()
+    entry_price = models.DecimalField(max_digits=12, decimal_places=2, default=0)
 
     def __str__(self):
-        return f'{self.quantity} x {self.product.unitName} in Order {self.order.id}'
+        return f"{self.service} x{self.quantity}"
 
 class ServiceOrder(models.Model):
-    customer = models.ForeignKey(CustomerDetails, on_delete=models.CASCADE)
-    dateOrdered = models.DateField(auto_now_add=True)
-    service = models.ForeignKey(ServiceType,on_delete=models.CASCADE)
+    status_choices = [
+        ('Active', 'Active'),
+        ('Finished', 'Finished'),
+        ('Cancelled', 'Cancelled')
+    ]
+    customer = models.ForeignKey(CustomerDetails, on_delete=models.SET_NULL, null=True)
+    technician = models.ForeignKey(TechnicianDetails, on_delete=models.SET_NULL, null=True)
+    date_ordered = models.DateField(auto_now_add=True)
+    
+    service_date = models.DateField()
+    total_price = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    status = models.CharField(max_length=255, choices=status_choices, default='Active')
 
     def __str__(self):
         return f"Order #{self.id} - {self.customer}"
+    
+class SalesOrderPayment(models.Model):
+    order = models.ForeignKey(SalesOrder, on_delete=models.CASCADE)
+    amount_paid = models.DecimalField(max_digits=12, decimal_places=2)
+    date_paid = models.DateField(auto_now_add=True)
 
-class PurchaseOrder(models.Model):
-    orderDate = models.DateField(auto_now_add=True)
-    supplierName = models.ForeignKey(SupplierDetails, on_delete=models.CASCADE)
-    customerName = models.ForeignKey(CustomerDetails, on_delete=models.CASCADE)
-    deliveryDate = models.DateField()
-    itemDesc = models.CharField(max_length=255)
-    itemQuantity = models.PositiveIntegerField()
-    itemCost = models.DecimalField(max_digits=12, decimal_places=2)
+    cc_number = models.CharField(max_length=16, null=True)
+    cc_name = models.CharField(max_length=255, null=True)
+    cc_expiry = models.CharField(max_length=5, null=True)
+    cc_cvv = models.CharField(max_length=3, null=True)
+
+    is_cash = models.BooleanField(default=False)
+
+    def __str__(self):
+        return f"Payment for Sales Order #{self.order.id}"
+    
+class ServiceOrderPayment(models.Model):
+    order = models.ForeignKey(ServiceOrder, on_delete=models.CASCADE)
+    amount_paid = models.DecimalField(max_digits=12, decimal_places=2)
+    date_paid = models.DateField(auto_now_add=True)
+
+    cc_number = models.CharField(max_length=16, null=True)
+    cc_name = models.CharField(max_length=255, null=True)
+    cc_expiry = models.CharField(max_length=5, null=True)
+    cc_cvv = models.CharField(max_length=3, null=True)
+
+    is_cash = models.BooleanField(default=False)
+
+    def __str__(self):
+        return f"Payment for Service Order #{self.order.id}"

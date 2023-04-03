@@ -1,14 +1,16 @@
 from django.contrib.auth.models import User, Group
 from JohnCarAirCo.models import (
+  AirconType,
   ProductUnit,
   CustomerDetails,
   TechnicianDetails,
-  SupplierDetails,
   ServiceType,
   SalesOrder,
-  OrderItem,
+  SalesOrderEntry,
   ServiceOrder,
-  PurchaseOrder
+  ServiceOrderEntry,
+  SalesOrderPayment,
+  ServiceOrderPayment,
 )
 from rest_framework import serializers
 from rest_framework.validators import UniqueValidator
@@ -53,98 +55,271 @@ class RegisterSerializer(serializers.ModelSerializer):
     user.save()
     return user
 
-class GroupSerializer(serializers.HyperlinkedModelSerializer):
+class GroupSerializer(serializers.ModelSerializer):
   class Meta:
     model = Group
     fields = ['url', 'name']
 
-class ProductUnitSerializer(serializers.HyperlinkedModelSerializer):
+class ProductUnitSerializer(serializers.ModelSerializer):
+
+  unit_type = serializers.StringRelatedField(many=False)
+  unit_type_id = serializers.PrimaryKeyRelatedField(
+    queryset=AirconType.objects.all(),
+    source='unit_type',
+  )
+
   class Meta:
     model = ProductUnit
     fields = [
-      'unitName',
-      'unitPrice',
-      'unitQuantity',
-      'airconType',
-      'unitType'
+      'id',
+      'unit_name',
+      'unit_price',
+      'unit_stock',
+      'unit_type',
+      'unit_type_id'
     ]
 
-class CustomerDetailsSerializer(serializers.HyperlinkedModelSerializer):
+class CustomerDetailsSerializer(serializers.ModelSerializer):
   class Meta:
     model = CustomerDetails
     fields = [
-      'customerName',
-      'customerContact',
-      'customerEmail',
-      'customerAddress'
+      'id',
+      'customer_name',
+      'customer_contact',
+      'customer_email',
+      'customer_address'
     ]
 
-class TechnicianDetailsSerializer(serializers.HyperlinkedModelSerializer):
+class TechnicianDetailsSerializer(serializers.ModelSerializer):
   class Meta:
     model = TechnicianDetails
     fields = [
-      'techName',
-      'techPhone',
-      'techEmail',
-      'techSched'
+      'id',
+      'tech_name',
+      'tech_phone',
+      'tech_email',
+      'tech_sched'
     ]
 
-class SupplierDetailsSerializer(serializers.HyperlinkedModelSerializer):
-  class Meta:
-    model = SupplierDetails
-    fields = [
-      'suppName',
-      'suppPhone',
-      'suppEmail',
-      'suppAddress'
-    ]
-
-class ServiceTypeSerializer(serializers.HyperlinkedModelSerializer):
+class ServiceTypeSerializer(serializers.ModelSerializer):
   class Meta:
     model = ServiceType
     fields = [
-      'servicesOffered',
-      'serviceChoice',
-      'estimatedCost'
+      'service_name',
+      'service_cost'
     ]
 
-class SalesOrderSerializer(serializers.HyperlinkedModelSerializer):
+class AirconTypeSerializer(serializers.ModelSerializer):
+  class Meta:
+    model = AirconType
+    fields = [
+      'type_name',
+    ]
+
+class SalesOrderEntrySerializer(serializers.ModelSerializer):
+  product = serializers.StringRelatedField(many=False)
+  product_id = serializers.PrimaryKeyRelatedField(
+    queryset=ProductUnit.objects.all(),
+    source='product',
+  )
+
+  order = serializers.StringRelatedField(many=False)
+  order_id = serializers.PrimaryKeyRelatedField(
+    queryset=SalesOrder.objects.all(),
+    source='order',
+  )
+
+  entry_price = serializers.DecimalField(max_digits=10, decimal_places=2, read_only=True)
+
+  class Meta:
+    model = SalesOrderEntry
+    fields = [
+      'id',
+      'product',
+      'product_id',
+      'order',
+      'order_id',
+      'quantity',
+      'entry_price'
+    ]
+
+  # add price to sales order total price
+  def create(self, validated_data):
+    order = validated_data['order']
+    validated_data['entry_price'] = validated_data['product'].unit_price * validated_data['quantity']
+    order.total_price += validated_data['entry_price']
+    order.save()
+    
+    return SalesOrderEntry.objects.create(**validated_data)
+
+  def update(self, instance, validated_data):
+    order = validated_data['order']
+    order.total_price -= instance.product.unit_price * instance.quantity
+    
+    validated_data['entry_price'] = validated_data['product'].unit_price * validated_data['quantity']
+    order.total_price += validated_data['entry_price']
+    order.save()
+
+    instance.product = validated_data.get('product', instance.product)
+    instance.quantity = validated_data.get('quantity', instance.quantity)
+    instance.save()
+    return instance
+
+
+class SalesOrderSerializer(serializers.ModelSerializer):
+  customer = serializers.StringRelatedField(many=False)
+  customer_id = serializers.PrimaryKeyRelatedField(
+    queryset=CustomerDetails.objects.all(),
+    source='customer',
+  )
+
+  entries = SalesOrderEntrySerializer(many=True, read_only=True)
+
+  total_price = serializers.DecimalField(max_digits=10, decimal_places=2, read_only=True)
+
   class Meta:
     model = SalesOrder
     fields = [
+      'id',
       'customer',
-      'dateOrdered',
-      'totalPrice',
-      'products'
+      'customer_id',
+      'date_ordered',
+      'total_price',
+      'entries',
+      'status',
+      'total_price'
     ]
 
-class OrderItemSerializer(serializers.HyperlinkedModelSerializer):
+class ServiceTypeSerializer(serializers.ModelSerializer):
   class Meta:
-    model = OrderItem
+    model = ServiceType
     fields = [
-      'product',
-      'order',
-      'quantity'
+      'id',
+      'service_name',
+      'service_cost'
     ]
 
-class ServiceOrderSerializer(serializers.HyperlinkedModelSerializer):
+class ServiceOrderEntrySerializer(serializers.ModelSerializer):
+  service = serializers.StringRelatedField(many=False)
+  service_id = serializers.PrimaryKeyRelatedField(
+    queryset=ServiceType.objects.all(),
+    source='service',
+  )
+
+  order = serializers.StringRelatedField(many=False)
+  order_id = serializers.PrimaryKeyRelatedField(
+    queryset=ServiceOrder.objects.all(),
+    source='order',
+  )
+
+  entry_price = serializers.DecimalField(max_digits=10, decimal_places=2, read_only=True)
+
+  class Meta:
+    model = ServiceOrderEntry
+    fields = [
+      'id',
+      'service',
+      'service_id',
+      'order',
+      'order_id',
+      'quantity',
+      'entry_price',
+    ]
+
+  # add price to sales order total price
+  def create(self, validated_data):
+    order = validated_data['order']
+    
+    validated_data['entry_price'] = validated_data['service'].service_cost * validated_data['quantity']
+    order.total_price += validated_data['entry_price']
+    order.save()
+    return ServiceOrderEntry.objects.create(**validated_data)
+  
+  def update(self, instance, validated_data):
+    order = validated_data['order']
+    order.total_price -= instance.service.service_cost * instance.quantity
+
+    validated_data['entry_price'] = validated_data['service'].service_cost * validated_data['quantity']
+    order.total_price += validated_data['entry_price']
+    order.save()
+
+    instance.service = validated_data.get('service', instance.service)
+    instance.quantity = validated_data.get('quantity', instance.quantity)
+    instance.save()
+    return instance
+
+class ServiceOrderSerializer(serializers.ModelSerializer):
+  customer = serializers.StringRelatedField(many=False)
+  customer_id = serializers.PrimaryKeyRelatedField(
+    queryset=CustomerDetails.objects.all(),
+    source='customer',
+  )
+
+  technician = serializers.StringRelatedField(many=False)
+  technician_id = serializers.PrimaryKeyRelatedField(
+    queryset=TechnicianDetails.objects.all(),
+    source='technician',
+  )
+
+  entries = ServiceOrderEntrySerializer(many=True, read_only=True)
+
+  service_date = serializers.DateField(format="%Y-%m-%d")
+
+  total_price = serializers.DecimalField(max_digits=10, decimal_places=2, read_only=True)
+
   class Meta:
     model = ServiceOrder
     fields = [
+      'id',
       'customer',
-      'dateOrdered',
-      'service'
+      'customer_id',
+      'date_ordered',
+      'entries',
+      'status',
+      'technician',
+      'technician_id',
+      'service_date',
+      'total_price',
     ]
 
-class PurchaseOrderSerializer(serializers.HyperlinkedModelSerializer):
+class SalesOrderPaymentSerializer(serializers.ModelSerializer):
+  order = serializers.StringRelatedField(many=False)
+  order_id = serializers.PrimaryKeyRelatedField(
+    queryset=SalesOrder.objects.all(),
+    source='order',
+  )
+
   class Meta:
-    model = PurchaseOrder
+    model = SalesOrderPayment
     fields = [
-      'orderDate',
-      'supplierName',
-      'customerName',
-      'deliveryDate',
-      'itemDesc',
-      'itemQuantity',
-      'itemCost'
+      'id',
+      'order',
+      'order_id',
+      'amount_paid',
+      'date_paid',
+      'cc_number',
+      'cc_name',
+      'cc_expiry',
+      'cc_cvv',
+    ]
+
+class ServiceOrderPaymentSerializer(serializers.ModelSerializer):
+  order = serializers.StringRelatedField(many=False)
+  order_id = serializers.PrimaryKeyRelatedField(
+    queryset=ServiceOrder.objects.all(),
+    source='order',
+  )
+
+  class Meta:
+    model = ServiceOrderPayment
+    fields = [
+      'id',
+      'order',
+      'order_id',
+      'amount_paid',
+      'date_paid',
+      'cc_number',
+      'cc_name',
+      'cc_expiry',
+      'cc_cvv',
     ]
